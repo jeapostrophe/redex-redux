@@ -68,7 +68,7 @@
  (subst x_1 e_x x_1) = e_x
  (subst x_1 e_x x_2) = x_2
 
- rel* e -->* e #:is e --> e
+ rel* e -->* e #:of e --> e
  ;; xxx expands to
  rel e RTC--> e #:is (I O)
 
@@ -95,14 +95,77 @@
  (eval (to-nat ((plus (succ one)) two))) = 4
 
  pred-succ :=
-  forall n
-   (to-nat (+ (+ n 1) -1)) = n)
+  ∀ n ->
+   (eval (to-nat (+ (+ n 1) -1))) = n)
 
 (redex-check #:with sem-ex
              pred-succ
              #:attempts 1000)
 
-(traces #:with sem-ex
-        ((plus (succ one)) (succ (succ zero))))
+(redex tylang
+ set
+ x ::= identifier
 
-;; xxx add types
+ set
+ n ::= number
+ 
+ set
+ e ::= (λ (x : T) e)
+       (e e)
+       (+ e e)
+       n
+       x
+       #:bindings
+       (λ (x) e #:refers-to x)
+
+ set T
+ T ::= num
+       (T -> T))
+
+(redex static #:extends tylang
+ map Γ : x -> T
+
+ rel Γ ⊢ e : T #:is (I I O)
+
+ (Γ x T_arg) ⊢ e : T_body
+ -----------------------------------------
+ Γ ⊢ (λ (x : T_arg) e) : (T_arg -> T_body)
+
+ Γ ⊢ e_fun : (T_arg -> T_body)
+ Γ ⊢ e_arg : T_arg
+ --------------------------
+ Γ ⊢ (e_fun e_arg) : T_body
+
+ Γ ⊢ e_lhs : num
+ Γ ⊢ e_rhs : num
+ -------------------------
+ Γ ⊢ (+ e_lhs e_rhs) : num
+
+ Γ ⊢ n : num
+
+ Γ ⊢ x : (Γ x))
+
+;; xxx typed examples
+(redex ty-exs #:extends static)
+
+(redex ty-runtime #:extends static
+ rel e --> e #:is (I O)
+ ;; xxx
+ 
+ rel* e -->* e #:of e --> e      
+ )
+
+(redex soundness #:extends ty-runtime
+ facts
+ progress :=
+ ∀ e_0 -> T -> e_1 ->
+   (Γ) ⊢ e_0 : T ->
+   (or (v = e_0)
+       (∃ e_1 e_0 --> e_1))
+       
+ preservation :=
+  ∀ e_0 -> T -> e_1 ->
+    (Γ) ⊢ e_0 : T ->
+    e_0 --> e_1 ->
+    (Γ) ⊢ e_1 : T
+)
