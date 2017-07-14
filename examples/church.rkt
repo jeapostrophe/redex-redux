@@ -8,7 +8,7 @@
 
 ;; xxx reflect each thing into a well-known racket type
 
-;; xxx need #lang for demos
+;; xxx need #lang for demos (w/ #%top-interaction and indent)
 
 ;; `redex` is like a single figure in a paper
 (redex lang
@@ -101,7 +101,7 @@
 
 (redex sem-ex
  ;; NOTE we extend two things! (sometimes that's not possible)
- #:extends (semantics lang-ex)
+ #:extends semantics lang-ex
  fun let : (x e) e -> e
  (let (x e_arg) e_body) = ((λ (x) e_body) e_arg)
 
@@ -139,7 +139,7 @@
 
 (redex static #:extends tylang
  ;; map defines an efficient map
- map Γ : x -> T
+ defmap Γ : x -> T
 
  rel Γ ⊢ e : T #:is (I I O)
 
