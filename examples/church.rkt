@@ -1,21 +1,24 @@
-#lang at-exp racket/base
+#lang racket/base
 (require redex-redux)
 
 ;; xxx pict rendering api (lots of customization)
-;; xxx `redex` is like a single figure in a paper
 ;; xxx syntax properties for coloring in DrR
 
 ;; xxx angle brackets for default tuple form?
 
+;; xxx reflect each thing into a well-known racket type
+
+;; xxx need #lang for demos
+
+;; `redex` is like a single figure in a paper
 (redex lang
- ;; xxx maybe set is a bad name because we want sets of stuff
- set
+ rtg
  x ::= identifier
 
- set
+ rtg
  n ::= number
  
- set
+ rtg
  e ::= (λ (x) e)
        (e e)
        (+ e e)
@@ -35,12 +38,12 @@
  to-nat := (λ (cn) ((cn (λ (n) (+ 1 n))) 0)))
 
 (redex domains #:extends lang
- ;; we can say that one set is a subset of another (for dealing with non-overlap)
- set : e                       ;; xxx could use ⊆ but long to type
- v ::= (λ (x) e)
-       n
-       
- set
+ ;; we can say that one rtg is a subset of another (for dealing with non-overlap)
+ rtg
+ v ⊆ e ::= (λ (x) e)
+           n
+
+ rtg
  E ::= hole
        (E e)
        (v E)
@@ -51,9 +54,10 @@
 ;; interop
 (define plus
   (redex-lambda
+   #:with domains
    (n_x n_y -> n)
    (+ n_x n_y)))
-;; xxx expands to
+;; expands to
 (define (raw-plus xt yt)
   (with-redex domains
     (redex-define n_x xt)
@@ -82,24 +86,22 @@
  (subst x_1 e_x x_2) = x_2
 
  rel* e -->* e #:of e --> e
- ;; xxx expands to
+ ;; expands to
  rel e RTC--> e #:is (I O)
 
- e RTC--> e                 ;; xxx look at newline!
+ e RTC--> e                 ;; NOTE look at newline!
  
  e_0 --> e_1
  e_1 RTC--> e_2
- --------------- [trans]    ;; xxx any number of - more than 2? (newline!)
+ --------------- [trans]    ;; NOTE any number of - more than 2? (newline!)
  e_0 RTC--> e_2
  ;; </rel*>
- 
- fun eval : e -> e
- (eval e_0) = e_n
- #:where e_0 -->* e_n)
+
+ relnf eval #:of e --> e)
 
 (redex sem-ex
- ;; xxx we extend two things! (sometimes that's not possible)
- #:extends semantics #:extends lang-ex
+ ;; NOTE we extend two things! (sometimes that's not possible)
+ #:extends (semantics lang-ex)
  fun let : (x e) e -> e
  (let (x e_arg) e_body) = ((λ (x) e_body) e_arg)
 
@@ -116,13 +118,13 @@
              #:attempts 1000)
 
 (redex tylang
- set
+ rtg
  x ::= identifier
 
- set
+ rtg
  n ::= number
  
- set
+ rtg
  e ::= (λ (x : T) e)
        (e e)
        (+ e e)
@@ -131,7 +133,7 @@
        #:bindings
        (λ (x) e #:refers-to x)
 
- set T
+ rtg
  T ::= num
        (T -> T))
 
@@ -162,11 +164,33 @@
 ;; xxx typed examples
 (redex ty-exs #:extends static)
 
+(define ty-plus
+  (redex-lambda
+   #:with static
+   (n_x n_y -> n)
+   (+ n_x n_y)))
+
 (redex ty-runtime #:extends static
+ rtg
+ v ⊆ e ::= (λ (x : T) e)
+           n
+       
+ rtg
+ E ::= hole
+       (E e)
+       (v E)
+       (+ E e)
+       (+ v E)
+
  rel e --> e #:is (I O)
- ;; xxx
- 
- rel* e -->* e #:of e --> e      
+ (in-hole E ((λ (x : T) e_body) e_arg)) -->
+ (in-hole E (substitute x e_arg e_body))
+
+ (in-hole E (+ n_lhs n_rhs)) -->
+ (in-hole E (,ty-plus n_lhs n_rhs))
+
+ rel* e -->* e #:of e --> e
+ relnf eval #:of e --> e
  )
 
 (redex soundness #:extends ty-runtime
@@ -181,5 +205,4 @@
   ∀ e_0 -> T -> e_1 ->
     (Γ) ⊢ e_0 : T ->
     e_0 --> e_1 ->
-    (Γ) ⊢ e_1 : T
-)
+    (Γ) ⊢ e_1 : T)
