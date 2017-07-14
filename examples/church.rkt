@@ -1,7 +1,14 @@
 #lang at-exp racket/base
 (require redex-redux)
 
+;; xxx pict rendering api (lots of customization)
+;; xxx `redex` is like a single figure in a paper
+;; xxx syntax properties for coloring in DrR
+
+;; xxx angle brackets for default tuple form?
+
 (redex lang
+ ;; xxx maybe set is a bad name because we want sets of stuff
  set
  x ::= identifier
 
@@ -28,6 +35,7 @@
  to-nat := (λ (cn) ((cn (λ (n) (+ 1 n))) 0)))
 
 (redex domains #:extends lang
+ ;; we can say that one set is a subset of another (for dealing with non-overlap)
  set : e                       ;; xxx could use ⊆ but long to type
  v ::= (λ (x) e)
        n
@@ -39,6 +47,8 @@
        (+ E e)
        (+ v E))
 
+;; redex values are opaque, so we need to eject/inject them for racket
+;; interop
 (define plus
   (redex-lambda
    (n_x n_y -> n)
@@ -57,7 +67,10 @@
  (in-hole E (subst x e_arg e_body))
 
  (in-hole E (+ n_lhs n_rhs)) -->
- (in-hole E (,plus n_lhs n_rhs))          ;; xxx do we need to know type?
+ ;; comma is NOT in the scope of the redex system and returns a term
+ ;; or a function when to the right of (
+ (in-hole E (,plus n_lhs n_rhs))
+ ;; xxx do we need to know type?
 
  fun subst : x e -> e
  (subst x_1 e_x (λ (x_1) e_1)) = (λ (x_1) e_1)
@@ -123,6 +136,7 @@
        (T -> T))
 
 (redex static #:extends tylang
+ ;; map defines an efficient map
  map Γ : x -> T
 
  rel Γ ⊢ e : T #:is (I I O)
