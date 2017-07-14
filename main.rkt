@@ -105,26 +105,42 @@
      (syntax/loc stx
        (begin (term x : s := e) ...))]))
 
+(begin-for-syntax
+  (define-syntax-class relation-mode
+    (pattern (~datum I))
+    (pattern (~datum O)))
+  (define-splicing-syntax-class relation-sequent
+    (pattern )))
 (define-redex-form (relation rbd stx)
-  (syntax-parse stx))
+  (syntax-parse stx
+    [(_ (~and in (~not #:is)) ... #:is (m:relation-mode ...)
+        s:relation-sequent ...)
+     (pretty-print (vector 'XXX-rel #'(in ...) #'(m ...) #'(s ...)))
+     #''XXX]))
 
 (define-redex-form (function rbd stx)
   (syntax-parse stx))
+;; XXX
 
-(define-redex-form (defmap rbd stx)
+(define-redex-form (define-map rbd stx)
   (syntax-parse stx))
+;; XXX
 
 (define-redex-form (fact rbd stx)
   (syntax-parse stx))
+;; XXX
 
 (define-redex-form (facts rbd stx)
   (syntax-parse stx))
+;; XXX
 
 (define-redex-form (relation-reflexive-transitive-closure rbd stx)
   (syntax-parse stx))
+;; XXX
 
 (define-redex-form (relation-normal-form rbd stx)
   (syntax-parse stx))
+;; XXX
 
 (provide redex
          regular-tree-grammar
@@ -137,7 +153,8 @@
          function
          (rename-out [function metafunction]
                      [function fun])
-         defmap
+         define-map
+         (rename-out [define-map defmap])
          fact
          facts
          relation-reflexive-transitive-closure

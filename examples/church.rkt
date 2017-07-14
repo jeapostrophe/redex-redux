@@ -28,17 +28,17 @@
        (λ (x) e #:refers-to x))
 
 (redex lang-ex #:extends lang
- terms : e
- zero := (λ (s) (λ (z) z))
- one := (λ (s) (λ (z) (s z)))
- two := (λ (s) (λ (z) (s (s z))))
- succ := (λ (n) (λ (s) (λ (z) (s ((n s) z)))))
- plus := (λ (m) (λ (n) (λ (s) (λ (z) ((m s) ((n s) z))))))
-
+ terms  :  e
+ zero   := (λ (s) (λ (z) z))
+ one    := (λ (s) (λ (z) (s z)))
+ two    := (λ (s) (λ (z) (s (s z))))
+ succ   := (λ (n) (λ (s) (λ (z) (s ((n s) z)))))
+ plus   := (λ (m) (λ (n) (λ (s) (λ (z) ((m s) ((n s) z))))))
  to-nat := (λ (cn) ((cn (λ (n) (+ 1 n))) 0)))
 
 (redex domains #:extends lang
- ;; we can say that one rtg is a subset of another (for dealing with non-overlap)
+ ;; we can say that one rtg is a subset of another (for dealing with
+ ;; non-overlap)
  rtg
  v ⊆ e ::= (λ (x) e)
            n
