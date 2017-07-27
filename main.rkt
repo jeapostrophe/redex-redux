@@ -62,6 +62,7 @@
          (define-syntax x #,(initial-static-redex-block-data (attribute e.deps)))
          (let ()
            (syntax-parameterize ([current-static-redex-block #'x])
+             (void)
              #,@(recur #'body)))))]))
 
 (begin-for-syntax
@@ -116,31 +117,41 @@
     [(_ (~and in (~not #:is)) ... #:is (m:relation-mode ...)
         . rel-body)
      (pretty-print (vector 'XXX-rel #'(in ...) #'(m ...) #'rel-body))
+     ;; xxx parse rel-body
      #''XXX]))
 
+(begin-for-syntax
+  (define-splicing-syntax-class fun-clause
+    (pattern (~seq in:expr (~datum =) out:expr))))
 (define-redex-form (function rbd stx)
-  (syntax-parse stx))
-;; XXX
+  (syntax-parse stx
+    [(_ f:id (~datum :) dom:id ... (~datum ->) rng:id fc:fun-clause ...)
+     (pretty-print (vector 'XXX-fun #'f #'(dom ...) #'rng #'(fc ...)))
+     #''XXX]))
 
 (define-redex-form (define-map rbd stx)
-  (syntax-parse stx))
-;; XXX
-
-(define-redex-form (fact rbd stx)
-  (syntax-parse stx))
-;; XXX
+  (syntax-parse stx
+    [(_ m:id (~datum :) from:id (~datum ->) to:id)
+     (pretty-print (vector 'XXX-defmap #'m #'from #'to))
+     #''XXX]))
 
 (define-redex-form (facts rbd stx)
-  (syntax-parse stx))
-;; XXX
+  (syntax-parse stx
+    [(_ . facts-body)
+     ;; xxx parse facts-body
+     #''XXX]))
 
 (define-redex-form (relation-reflexive-transitive-closure rbd stx)
-  (syntax-parse stx))
-;; XXX
+  (syntax-parse stx
+    [(_ new:id #:of out:id)
+     (pretty-print (vector 'XXX-rel* #'new #'out))
+     #''XXX]))
 
 (define-redex-form (relation-normal-form rbd stx)
-  (syntax-parse stx))
-;; XXX
+  (syntax-parse stx
+    [(_ new:id #:of out:id)
+     (pretty-print (vector 'XXX-relnf #'new #'out))
+     #''XXX]))
 
 (provide redex
          regular-tree-grammar
@@ -155,7 +166,6 @@
                      [function fun])
          define-map
          (rename-out [define-map defmap])
-         fact
          facts
          relation-reflexive-transitive-closure
          (rename-out [relation-reflexive-transitive-closure rel*])

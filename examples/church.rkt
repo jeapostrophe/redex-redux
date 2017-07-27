@@ -85,7 +85,7 @@
  (subst x_1 e_x x_1) = e_x
  (subst x_1 e_x x_2) = x_2
 
- rel* e -->* e #:of e --> e
+ rel* -->* #:of -->
  ;; expands to
  rel e RTC--> e #:is (I O)
 
@@ -97,16 +97,16 @@
  e_0 RTC--> e_2
  ;; </rel*>
 
- relnf eval #:of e --> e)
+ relnf eval #:of -->)
 
 (redex sem-ex
  ;; NOTE we extend two things! (sometimes that's not possible)
  #:extends semantics lang-ex
- fun let : (x e) e -> e
- (let (x e_arg) e_body) = ((λ (x) e_body) e_arg)
+ fun let : x e e -> e
+ (let x e_arg e_body) = ((λ (x) e_body) e_arg)
 
  facts
- (to-nat (let (x (succ one)) ((plus x) x))) -->* 2
+ (to-nat (let x (succ one) ((plus x) x))) -->* 2
  (eval (to-nat ((plus (succ one)) two))) = 4
 
  pred-succ :=
@@ -189,8 +189,8 @@
  (in-hole E (+ n_lhs n_rhs)) -->
  (in-hole E (,ty-plus n_lhs n_rhs))
 
- rel* e -->* e #:of e --> e
- relnf eval #:of e --> e
+ rel* -->* #:of -->
+ relnf eval #:of -->
  )
 
 (redex soundness #:extends ty-runtime
