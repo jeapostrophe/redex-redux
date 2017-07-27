@@ -35,7 +35,8 @@
       (if csrd
         ((redex-form-handler-do rfh) csrd stx)
         (raise-syntax-error (redex-form-handler-id rfh)
-                            "illegal outside redex"))))
+                            "illegal outside redex"
+                            stx))))
   (define-syntax-class redex-form
     #:attributes (value)
     (pattern x
@@ -53,6 +54,7 @@
        (syntax-parse a-body
          [() '()]
          [(rf:redex-form (~and rf-arg (~not _:redex-form)) ... . more-body)
+          ;; xxx give it access to the next thing?
           (cons (syntax/loc a-body (rf rf-arg ...))
                 (recur #'more-body))]))
      (quasisyntax/loc stx
@@ -108,14 +110,12 @@
 (begin-for-syntax
   (define-syntax-class relation-mode
     (pattern (~datum I))
-    (pattern (~datum O)))
-  (define-splicing-syntax-class relation-sequent
-    (pattern )))
+    (pattern (~datum O))))
 (define-redex-form (relation rbd stx)
   (syntax-parse stx
     [(_ (~and in (~not #:is)) ... #:is (m:relation-mode ...)
-        s:relation-sequent ...)
-     (pretty-print (vector 'XXX-rel #'(in ...) #'(m ...) #'(s ...)))
+        . rel-body)
+     (pretty-print (vector 'XXX-rel #'(in ...) #'(m ...) #'rel-body))
      #''XXX]))
 
 (define-redex-form (function rbd stx)
