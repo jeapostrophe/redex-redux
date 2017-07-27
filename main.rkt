@@ -4,13 +4,36 @@
                      racket/syntax
                      ;; xxx
                      racket/pretty)
-         racket/stxparam)
+         racket/stxparam
+         racket/splicing)
 
 (begin-for-syntax
-  (struct static-redex-block-data (deps) #:prefab)
-
-  (define (initial-static-redex-block-data deps)
-    (static-redex-block-data deps))
+  (require (for-syntax racket/base
+                       syntax/parse
+                       racket/syntax))
+  (define-syntax (fake-struct stx)
+    (syntax-parse stx
+      [(_ s:id (f:id ...) #:prefab)
+       (with-syntax ([([s-f f-idx] ...)
+                      (for/list ([f (in-list (syntax->list #'(f ...)))]
+                                 [i (in-naturals 1)])
+                        (list (format-id #'s "~a-~a" #'s f) i))]
+                     [s? (format-id #'s "~a?" #'s)])
+         (syntax/loc stx
+           (begin (define (s f ...)
+                    (vector 's f ...))
+                  (define (s-f x) (vector-ref x f-idx))
+                  ...
+                  (define (s? x) (and (vector? x) (eq? 's (vector-ref x 0)))))))])))
+(begin-for-syntax
+  (struct static-redex-block-data (me-id deps lang-id rtg-ht) #:prefab)
+  ;; xxx getting weird error without fake-struct
+  (fake-struct static-rtg-data (lhs parent rhses binding) #:prefab)
+  
+  (define (initial-static-redex-block-data me-id deps)
+    (static-redex-block-data me-id deps
+                             (format-id #f "~a:language" me-id)
+                             (make-hasheq)))
 
   (define-syntax-class redex-block
     #:attributes (value)
@@ -33,7 +56,7 @@
     (λ (rfh stx)
       (define csrd (syntax-parameter-value #'current-static-redex-block))
       (if csrd
-        ((redex-form-handler-do rfh) csrd stx)
+        ((redex-form-handler-do rfh) (syntax-local-value csrd) stx)
         (raise-syntax-error (redex-form-handler-id rfh)
                             "illegal outside redex"
                             stx))))
@@ -54,16 +77,28 @@
        (syntax-parse a-body
          [() '()]
          [(rf:redex-form (~and rf-arg (~not _:redex-form)) ... . more-body)
-          ;; xxx give it access to the next thing?
+          ;; xxx give it access to the next thing? for error
           (cons (syntax/loc a-body (rf rf-arg ...))
                 (recur #'more-body))]))
      (quasisyntax/loc stx
        (begin
-         (define-syntax x #,(initial-static-redex-block-data (attribute e.deps)))
-         (let ()
-           (syntax-parameterize ([current-static-redex-block #'x])
+         (define-syntax x #,(initial-static-redex-block-data #'x (attribute e.deps)))
+         (splicing-syntax-parameterize ([current-static-redex-block #'x])
+           (let ()
              (void)
-             #,@(recur #'body)))))]))
+             #,@(recur #'body)))
+         (redex-block-post x)))]))
+
+(require redex/reduction-semantics)
+(define-syntax (redex-block-post stx)
+  (syntax-parse stx
+    [(_ x:redex-block)
+     (define rbd (attribute x.value))
+     (quasisyntax/loc stx
+       (begin
+         ;; xxx maybe do extended if deps present
+         (define-language #,(static-redex-block-data-lang-id rbd)
+           )))]))
 
 (begin-for-syntax
   (define-syntax-class redex-subset-sym
@@ -78,15 +113,28 @@
      (syntax/loc stx
        (define-redex-form x (λ (tr st) body ...)))]))
 
+(begin-for-syntax
+  (define (maybe-syntax->datum x)
+    (cond [(syntax? x) (syntax->datum x)]
+          [(list? x) (map maybe-syntax->datum x)]
+          [else x])))
 (define-redex-form (regular-tree-grammar the-rbd stx)
   (syntax-parse stx
     [(_ lhs:id (~optional (~seq _:redex-subset-sym parent:id))
-        (~literal ::=)
+        (~datum ::=)
         rhs:expr ...
         (~optional (~seq #:bindings binds:expr ...)))
-     (pretty-print (vector 'XXX-rtg #'lhs (attribute parent) #'(rhs ...)
-                           (attribute binds)))
-     #''XXX]))
+     (define rtg-ht (static-redex-block-data-rtg-ht the-rbd))
+     (define lhs-v (syntax-e #'lhs))
+     (when (hash-has-key? rtg-ht lhs-v)
+       (raise-syntax-error 'regular-tree-grammar "Duplicate definition" stx #'lhs))
+     (hash-set! rtg-ht lhs-v
+                (static-rtg-data lhs-v (maybe-syntax->datum (attribute parent))
+                                 ;; xxx record-disappeared-use? look
+                                 ;; for identifier, number, etc?
+                                 (syntax->datum #'(rhs ...))
+                                 (maybe-syntax->datum (attribute binds))))
+     #'(void)]))
 
 (define-syntax-rule (define-pattern-keyword kw)
   (define-syntax (kw stx) (raise-syntax-error 'kw "Illegal outside redex" stx)))
